@@ -74,4 +74,21 @@ end
 end
 
 
+@testset "n=10 IncrementalMoment" begin
+    N = 10
+    values = rand(Float64, 100)
+    moments = IncrementalMoment(Float64, N)
+    for i in 1:(N - 1)
+        update!(moments, values[i])
+    end
+    for i in N:length(values)
+        update!(moments, values[i])
+        @test mean(values[1:i]) ≈ mean(moments)
+        for n in 2:N
+            @test moment(values[1:i], n) ≈ moment(moments, n)
+        end
+    end
+end
+
+
 

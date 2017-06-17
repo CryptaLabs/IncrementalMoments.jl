@@ -1,18 +1,35 @@
 module IncrementalMoments
 using Combinatorics: multinomial
-export update_moments, update_moments!
+import StatsBase: moment
+export update_moments, update_moments!, IncrementalMoment
+export update!, update
 
-update_moments{T}(n::Integer, value::T, moments::AbstractVector{T}) = begin
-    update_moments!(n, value, moments::AbstractVector{T}, copy(moments))
+
+"""
+Object to compute moments of a streaming distribution
+"""
+abstract IncrementalMoment
+type ScalarIncrementalMoment{T <: AbstractFloat} <: IncrementalMoment
+    moments::Vector{T}
+    nvalues::Int64
 end
 
-update_moments!{T}(n::Integer, value::T, moments::AbstractVector{T}) = begin
-    update_moments!(n, value, moments::AbstractVector{T}, moments)
+(::Type{IncrementalMoment}){T <: AbstractFloat}(::Type{T}, order=2) = begin
+    ScalarIncrementalMoment(zeros(typeof(one(T) / 2), order), 0)
 end
 
-update_moments!{T <: Number}(n::Integer, value::T, 
-                             moments::AbstractVector{T},
-                             out::AbstractVector{T}) = begin
+update_moments(n::Integer, value::Real, moments::AbstractVector) = begin
+    update_moments!(n, value, moments, deepcopy(moments))
+end
+
+update_moments!{T <: AbstractFloat}(n::Integer, value::Real,
+                                    moments::AbstractVector{T}) = begin
+    update_moments!(n, value, moments, moments)
+end
+
+update_moments!{T <: AbstractFloat}(n::Integer, value::Real,
+                                    moments::AbstractVector{T},
+                                    out::AbstractVector{T}) = begin
     length(moments) == 0 && return out
 
     δ = value .- moments[1]
@@ -32,5 +49,26 @@ update_moments!{T <: Number}(n::Integer, value::T,
     end
     out
 end
+
+update!(m::IncrementalMoment, value) = begin
+    if m.nvalues == 0
+        m.nvalues = 1
+        m.moments[1] = value
+    else
+        m.nvalues += 1
+        update_moments!(m.nvalues, value, m.moments)
+    end
+    m
+end
+
+update(m::IncrementalMoment, value) = update!(deepcopy(m), value)
+Base.mean(m::IncrementalMoment) = m.moments[1]
+Base.var(m::IncrementalMoment; corrected=true) = begin
+    m.moments[2] / (corrected ? m.nvalues - 1: m.nvalues)
+end
+moment(m::IncrementalMoment, n::Integer) = begin
+    n == 1 ? convert(eltype(m.moments), 0): m.moments[n] / m.nvalues
+end
+Base.size(m::IncrementalMoment) = length(m.moments)
 
 end # module
