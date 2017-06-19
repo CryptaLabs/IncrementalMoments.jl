@@ -1,3 +1,4 @@
+@doc readstring(joinpath(dirname(dirname(@__FILE__)), "README.md")) ->
 module IncrementalMoments
 using Combinatorics: multinomial
 using ArgCheck
