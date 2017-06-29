@@ -1,4 +1,4 @@
-A better alternative to this package might be [joshday/OnlineStats.jl](github.com/joshday/OnlineStats.jl).
+A better alternative to this package might be [joshday/OnlineStats.jl](https://github.com/joshday/OnlineStats.jl).
 
 # IncrementalMoments
 
