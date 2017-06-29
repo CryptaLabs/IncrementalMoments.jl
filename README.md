@@ -1,3 +1,5 @@
+A better alternative to this package might be [joshday/OnlineStats.jl](github.com/joshday/OnlineStats.jl).
+
 # IncrementalMoments
 
 Implements formulae to compute moments (Mₙ = 1/n Σ(m_i - μ)ⁿ) incrementally. These
