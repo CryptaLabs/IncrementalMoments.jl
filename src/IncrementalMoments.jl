@@ -1,4 +1,4 @@
-@doc readstring(joinpath(dirname(dirname(@__FILE__)), "README.md")) ->
+@doc readstring(joinpath(dirname(@__DIR__), "README.md")) ->
 module IncrementalMoments
 using Combinatorics: multinomial
 using ArgCheck
@@ -11,12 +11,12 @@ export update!, update
 """
 Object to compute moments of a streaming distribution
 """
-abstract IncrementalMoment
+abstract type IncrementalMoment end
 
 """
 Incremental moment specialized for scalar inputs.
 """
-type ScalarIncrementalMoment{T <: AbstractFloat} <: IncrementalMoment
+mutable struct ScalarIncrementalMoment{T <: AbstractFloat} <: IncrementalMoment
     moments::Vector{T}
     nvalues::Int64
 end
@@ -24,19 +24,25 @@ end
 """
 Incremental moments specialized for array inputs
 """
-type ArrayIncrementalMoment{T <: AbstractArray} <: IncrementalMoment
+mutable struct ArrayIncrementalMoment{T <: AbstractArray} <: IncrementalMoment
     moments::T
     nvalues::Int64
 end
 
-(::Type{IncrementalMoment}){T <: AbstractFloat}(::Type{T}, order=2) = begin
-    ScalarIncrementalMoment(zeros(typeof(one(T) / 2), order), 0)
-end
+IncrementalMoment(T::Type{<: AbstractFloat}, order=2) =
+    ScalarIncrementalMoment(zeros(typeof(oneunit(T) / 2), order), 0)
 
-(::Type{IncrementalMoment}){T <: AbstractFloat, I <: Integer}(::Type{T},
-                                                              dims::NTuple{I},
-                                                              order=2) = begin
-    ArrayIncrementalMoment(zeros(typeof(one(T) / 2), (dims..., order)), 0)
+IncrementalMoment(T::Type{<: AbstractFloat},
+                  dims::Tuple{Integer, Vararg{Integer}},
+                  order=2) =
+    ArrayIncrementalMoment(zeros(typeof(oneunit(T) / 2), (dims..., order)), 0)
+
+IncrementalMoment(value::AbstractArray{<: Real}, order=2) = begin
+    m = similar(value ./ 2, tuple(size(value)..., order))
+    fill!(m, 0)
+    result = ArrayIncrementalMoment(m, 0)
+    update!(result, value)
+    result
 end
 
 update_moments(n::Integer, value::Real, moments::AbstractVector) = begin
@@ -53,9 +59,8 @@ update_moments!(n::Integer, value::AbstractArray, moments::AbstractArray) = begi
     update_moments!(n, value, moments, moments)
 end
 
-update_moments!{T <: AbstractFloat}(n::Integer, value::Real,
-                                    moments::AbstractVector{T},
-                                    out::AbstractVector{T}) = begin
+update_moments!(n::Integer, value::Real, moments::AbstractVector{<: AbstractFloat},
+                out::AbstractVector{<: AbstractFloat}) = begin
     length(moments) == 0 && return out
 
     δ = value - moments[1]
@@ -64,7 +69,7 @@ update_moments!{T <: AbstractFloat}(n::Integer, value::Real,
     out[1] = moments[1] + δ_div_n
     length(moments) == 1 && return out
 
-    for p in drop(eachindex(moments), 1)
+    for p in Iterators.drop(eachindex(moments), 1)
         result = moments[p]
         factor = δ_div_n
         for k in 1:(p - 2)
@@ -80,7 +85,7 @@ end
     view(a, collect(1:u for u in size(a)[1:end-1])..., n)
 end
 
-update_moments!{T1 <: AbstractFloat, T2 <:AbstractFloat}(
+update_moments!{T1 <: Real, T2 <:AbstractFloat}(
                 n::Integer, value::AbstractArray{T1},
                 moments::AbstractArray{T2},
                 out::AbstractArray{T2}) = begin
@@ -101,7 +106,7 @@ update_moments!{T1 <: AbstractFloat, T2 <:AbstractFloat}(
         result = slice_last(moments, p)
         factor = copy(δ_div_n)
         for k in 1:(p - 2)
-            result .-= multinomial(k, p - k) .* factor .* slice_last(moments, p - k)
+            result .-= multinomial(k, p - k) .* factor .* slice_last(out, p - k)
             factor .*= δ_div_n
         end
         slice_last(out, p) .= result .+ δⁿ .- δ.*factor
@@ -134,7 +139,7 @@ Base.length(m::ScalarIncrementalMoment) = length(m.moments)
 Base.size(m::ScalarIncrementalMoment) = length(m.moments)
 Base.size(m::IncrementalMoment) = size(m.moments)
 Base.size(m::IncrementalMoment, i::Integer) = size(m.moments, i)
-Base.length(m::IncrementalMoment, i::Integer) = length(m.moments)
+Base.length(m::IncrementalMoment) = length(m.moments)
 Base.ndims(::ScalarIncrementalMoment) = 1
 Base.ndims(m::ArrayIncrementalMoment) = ndims(m.moments)
 Base.mean(m::ArrayIncrementalMoment) = copy(slice_last(m.moments, 1))

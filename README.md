@@ -1,4 +1,10 @@
-A better alternative to this package might be [joshday/OnlineStats.jl](https://github.com/joshday/OnlineStats.jl).
+For scalars and small arrays,
+[joshday/OnlineStats.jl](https://github.com/joshday/OnlineStats.jl) is likely a better
+alternative.
+
+[![Build Status](https://travis-ci.org/CryptaLabs/IncrementalMoments.jl.svg?branch=master)](https://travis-ci.org/CryptaLabs/IncrementalMoments.jl)
+[![Coverage
+Status](https://coveralls.io/repos/CryptaLabs/IncrementalMoments.jl/badge.svg)](https://coveralls.io/r/Cryptalabs/IncrementalMoments.jl)
 
 # IncrementalMoments
 
