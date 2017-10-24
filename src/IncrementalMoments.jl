@@ -7,6 +7,9 @@ import StatsBase: moment
 export update_moments, update_moments!, IncrementalMoment
 export update!, update
 
+macro lintpragma(s) end
+@lintpragma("Ignore use of undeclared variable update!")
+@lintpragma("Ignore use of undeclared variable update_moments!")
 
 """
 Object to compute moments of a streaming distribution
@@ -36,6 +39,11 @@ IncrementalMoment(T::Type{<: AbstractFloat},
                   dims::Tuple{Integer, Vararg{Integer}},
                   order=2) =
     ArrayIncrementalMoment(zeros(typeof(oneunit(T) / 2), (dims..., order)), 0)
+
+ArrayIncrementalMoment(array::AbstractArray) = begin
+    @argcheck ndims(array) > 1 "Last dimension runs over moments"
+    ArrayIncrementalMoment(zeros(array), 0)
+end
 
 IncrementalMoment(value::AbstractArray{<: Real}, order=2) = begin
     m = similar(value ./ 2, tuple(size(value)..., order))
@@ -81,9 +89,7 @@ update_moments!(n::Integer, value::Real, moments::AbstractVector{<: AbstractFloa
     out
 end
 
-@inline slice_last(a, n) = begin
-    view(a, collect(1:u for u in size(a)[1:end-1])..., n)
-end
+@inline slice_last(a, n) = view(a, (Base.OneTo(u) for u in Base.front(size(a)))..., n)
 
 update_moments!{T1 <: Real, T2 <:AbstractFloat}(
                 n::Integer, value::AbstractArray{T1},
@@ -144,7 +150,8 @@ Base.ndims(::ScalarIncrementalMoment) = 1
 Base.ndims(m::ArrayIncrementalMoment) = ndims(m.moments)
 Base.mean(m::ArrayIncrementalMoment) = copy(slice_last(m.moments, 1))
 Base.var(m::ArrayIncrementalMoment; corrected=true) = begin
-    slice_last(m.moments, 2) / (corrected ? m.nvalues - 1: m.nvalues)
+    s = slice_last(m.moments, 2)
+    similar(s) .= s ./ (corrected ? m.nvalues - 1: m.nvalues)
 end
 moment(m::ArrayIncrementalMoment, n::Integer) = begin
     if n == 1
