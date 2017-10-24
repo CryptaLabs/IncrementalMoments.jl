@@ -11,9 +11,9 @@ Status](https://coveralls.io/repos/CryptaLabs/IncrementalMoments.jl/badge.svg)](
 Implements formulae to compute moments (Mₙ = 1/n Σ(m_i - μ)ⁿ) incrementally. These
 formulae are taken from
 
-    ___Simpler Online Updates for Arbitrary-Order Central Moments
-    Xiangrui Meng
-    [arXiv](https://arxiv.org/abs/1510.04923) Oct 2015
+   ___Simpler Online Updates for Arbitrary-Order Central Moments___
+   Xiangrui Meng
+   [arXiv](https://arxiv.org/abs/1510.04923) Oct 2015
 
 
 The moments can be computed on scalars or arrays:
